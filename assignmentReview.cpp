@@ -22,6 +22,10 @@ public:
     int iterations;
 
     Assignment(string _name) : name(_name), status(AssignmentStatus::PENDING), grade(0), iterations(0) {}
+ 
+    void incrementIterations() {
+        iterations++;
+    }
 };
 
 // Base class for both students and reviewers
@@ -101,6 +105,16 @@ public:
         }
         throw invalid_argument("Assignment not found!");
     }
+
+    void incrementIterations(string assignmentName) {
+    for (auto& assignment : assignments) {
+        if (assignment.name == assignmentName) {
+            assignment.incrementIterations();
+            return;
+        }
+    }
+    throw invalid_argument("Assignment not found!");
+}
 };
 
 // Reviewer class inheriting from IMG_Member
@@ -145,13 +159,7 @@ public:
         }
     }
 
-    // Method to assign assignment
-    void assignAssignment(Student& student, string assignmentName) {
-        Assignment assignment(assignmentName);
-        student.addAssignment(assignment);
-    }
-
-    // Method to review assignment
+    // Modify the reviewAssignment method in the Reviewer class
     void reviewAssignment(Student& student, string assignmentName, bool approve, int grade) {
         try {
             AssignmentStatus status = student.getAssignmentStatus(assignmentName);
@@ -161,6 +169,7 @@ public:
                     student.setAssignmentGrade(assignmentName, grade);
                 } else {
                     cout << "Assignment '" << assignmentName << "' needs iterations." << endl;
+                    student.incrementIterations(assignmentName); // Add this line
                     suggestIteration(student, assignmentName);
                 }
             } else {
@@ -168,7 +177,7 @@ public:
             }
         } catch (const invalid_argument& e) {
             cerr << "Error: " << e.what() << endl;
-        } catch (const logic_error& e) {
+        } catch ( const logic_error& e) {
             cerr << "Error: " << e.what() << endl;
         }
     }
@@ -224,6 +233,7 @@ int main() {
     reviewer.reviewAssignment(student2, "Assignment 1", true,5);
     cout << "--------------------" << endl;
     // Student profiles after assignment is reviewed and iterations are done
+
     student1.getProfile();
     cout << "--------------------" << endl;
     student2.getProfile();
