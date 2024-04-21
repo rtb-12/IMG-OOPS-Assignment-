@@ -79,9 +79,9 @@ public:
 // Default constructor
     Student() : IMG_Member() {}
 
-    // Constructor that accepts an Assignment
+    // Constructor 
     Student(string username, string password, string name, int id, Assignment assignment)
-    : User(username, password)  // change this to User if Student should inherit from User
+    : User(username, password)
 {
     // Initialize the remaining member variables
     this->name = name;
@@ -93,14 +93,16 @@ public:
     {
         return assignments;
     }
+
     string getName() const override { return name; }
     bool isReviewer() const override { return false; }
+    // Method to get profile information for students
     Student(string username, string password, string _name, int _id)
         : User(username, password)
     {
         this->name = _name;
         this->id = _id;
-    } // Method to get profile information for students
+    }
     void getProfile() const override
     {
         cout << "Student Name: " << name << endl;
@@ -456,7 +458,7 @@ public:
 }
 };
 
-/// UserManager class
+// UserManager class
 class UserManager
 {
     map<string, User *> users;
@@ -498,8 +500,6 @@ void registerUser(string username, string password, string name, int id, bool is
         Student *student = new Student(username, password, name, id, assignment);
         user = student;
         studentsById[id] = student;
-        // Test getPassword() for Student
-        cout << "Password for student " << username << ": " << student->getPassword() << endl;
     
     }
     users[username] = user;
@@ -546,8 +546,7 @@ void registerUser(string username, string password, string name, int id, bool is
         file << "\n";
         file.close();
     }
-
-    void loadData()
+void loadData()
 {
     ifstream file("users.txt");
     string username, password, name, assignment;
@@ -557,14 +556,37 @@ void registerUser(string username, string password, string name, int id, bool is
     while (file >> username >> password >> name >> id >> isReviewer >> assignment)
     {
         vector<int> iterations;
-        while (file >> iteration)
+        char nextChar;
+        while (file >> nextChar && nextChar != '\n')
         {
-            iterations.push_back(iteration);
+            file.putback(nextChar);  // put the character back, because it's not a newline
+            if (file >> iteration)
+            {
+                iterations.push_back(iteration);
+            }
         }
         registerUser(username, password, name, id, isReviewer, assignment);
     }
     file.close();
 }
+//     void loadData()
+// {
+//     ifstream file("users.txt");
+//     string username, password, name, assignment;
+//     int id, iteration;
+//     bool isReviewer;
+
+//     while (file >> username >> password >> name >> id >> isReviewer >> assignment)
+//     {
+//         vector<int> iterations;
+//         while (file >> iteration)
+//         {
+//             iterations.push_back(iteration);
+//         }
+//         registerUser(username, password, name, id, isReviewer, assignment);
+//     }
+//     file.close();
+// }
 };
 
 int main()
