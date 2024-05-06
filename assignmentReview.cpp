@@ -59,7 +59,6 @@ protected:
     int id;
 
 public:
-    
     IMG_Member() : User("", "") {}
 
     IMG_Member(string username, string password, string _name, int _id)
@@ -75,9 +74,7 @@ private:
     vector<Assignment> assignments;
 
 public:
-   
     Student() : IMG_Member() {}
-
 
     Student(string username, string password, string name, int id, Assignment assignment)
         : User(username, password)
@@ -145,17 +142,15 @@ public:
 
             if (std::stoi(fields[3]) == this->getId())
             {
-               
+
                 for (size_t i = 6; i < fields.size(); i += 2)
                 {
                     if (fields[i] == assignmentName)
                     {
                         assignmentExists = true;
 
-                       
-                        line += " " + link + " 0";
+                        line += " " + link + " 0 0 ~";
 
-                        
                         file.seekg(prevPos);
                         file << line << std::endl;
                         break;
@@ -175,7 +170,6 @@ public:
         file.close();
     }
 
- 
     AssignmentStatus getAssignmentStatus(string assignmentName) const
     {
         for (const auto &assignment : assignments)
@@ -188,48 +182,7 @@ public:
         throw invalid_argument("Assignment not found!");
     }
 
-
-    // void setAssignmentGrade(string assignmentName, int grade)
-    // {
-    //     for (auto &assignment : assignments)
-    //     {
-    //         if (assignment.name == assignmentName)
-    //         {
-    //             assignment.grade = grade;
-    //             cout << "Grade for assignment '" << assignmentName << "' set to " << grade << "!" << endl;
-    //             return;
-    //         }
-    //     }
-    //     throw invalid_argument("Assignment not found!");
-    // }
-
-    // void submitRecheck(string assignmentName)
-    // {
-    //     for (auto &assignment : assignments)
-    //     {
-    //         if (assignment.name == assignmentName)
-    //         {
-    //             assignment.status = AssignmentStatus::RECHECK_SUBMITTED;
-    //             cout << "Recheck request for assignment '" << assignmentName << "' submitted successfully!" << endl;
-    //             return;
-    //         }
-    //     }
-    //     throw invalid_argument("Assignment not found!");
-    // }
-
-    // void incrementIterations(string assignmentName)
-    // {
-    //     for (auto &assignment : assignments)
-    //     {
-    //         if (assignment.name == assignmentName)
-    //         {
-    //             assignment.incrementIterations();
-    //             return;
-    //         }
-    //     }
-    //     throw invalid_argument("Assignment not found!");
-    // }
-
+   
     void viewAssignments()
     {
         std::ifstream file("users.txt");
@@ -241,19 +194,28 @@ public:
             std::vector<std::string> fields;
             std::string field;
 
-            while (std::getline(iss, field, ' ')) 
+            while (std::getline(iss, field, ' '))
             {
                 fields.push_back(field);
             }
 
-           
             if (std::stoi(fields[3]) == this->getId())
             {
-                
-                for (size_t i = 6; i < fields.size(); i += 3)
+
+                for (size_t i = 6; i < fields.size(); i += 5)
                 {
                     std::cout << "Assignment Name: " << fields[i]
-                              << ", Status: " << (fields[i + 2] == "1" ? "Completed" : "Pending") << std::endl;
+                              << ", Status: " << (fields[i + 3] == "1" ? "Completed" : "Pending") << " Number of Iterations : " << fields[i + 3];
+
+                    // Split the comments
+                    std::string comments = fields[i + 4];
+                    std::istringstream iss(comments);
+                    std::string comment;
+                    while (std::getline(iss, comment, '~'))
+                    {
+                        std::cout << "|" << comment;
+                    }
+                    std::cout << std::endl;
                 }
                 break;
             }
@@ -262,7 +224,6 @@ public:
         file.close();
     }
 };
-
 
 class Reviewer : public IMG_Member
 {
@@ -275,7 +236,7 @@ public:
     bool isReviewer() const override { return true; }
     Reviewer(string username, string password, string name, int id) : User(username, password)
     {
-       
+
         this->name = name;
         this->id = id;
     }
@@ -290,14 +251,14 @@ public:
             std::vector<std::string> fields;
             std::string field;
 
-            while (std::getline(iss, field, ' ')) 
+            while (std::getline(iss, field, ' '))
             {
                 fields.push_back(field);
             }
 
             if (fields.size() >= 5 && fields[4] == "0")
             {
-      
+
                 students.push_back(new Student(fields[0], fields[1], fields[2], std::stoi(fields[3])));
             }
         }
@@ -319,11 +280,6 @@ public:
         cout << "Reviewer ID: " << id << endl;
     }
 
-   
-    // void addStudent(Student *student)
-    // {
-    //     students.push_back(student);
-    // }
 
     void addAssignmentToStudent(int studentId, const std::string &assignmentDetails)
     {
@@ -337,15 +293,14 @@ public:
             std::vector<std::string> fields;
             std::string field;
 
-            while (std::getline(iss, field, ' ')) 
+            while (std::getline(iss, field, ' '))
             {
                 fields.push_back(field);
             }
 
-
             if (std::stoi(fields[3]) == studentId)
             {
-                
+
                 line += " " + assignmentDetails;
             }
 
@@ -361,7 +316,6 @@ public:
         }
     }
 
-   
     void addAssignmentToBatch(int startId, int endId, string assignmentName)
     {
         for (auto &student : students)
@@ -378,72 +332,79 @@ public:
         }
     }
 
-   
-void reviewAssignment(Student &student, const std::string &assignmentName, bool approve)
-{
-    std::fstream file("users.txt", std::ios::in | std::ios::out);
-    std::string line;
-    std::streampos prevPos;
-    bool assignmentExists = false;
-
-    while (std::getline(file, line))
+    void reviewAssignment(Student &student, const std::string &assignmentName, bool approve, string comment)
     {
-        std::istringstream iss(line);
-        std::vector<std::string> fields;
-        std::string field;
+        std::fstream file("users.txt", std::ios::in | std::ios::out);
+        std::string line;
+        std::streampos prevPos;
+        bool assignmentExists = false;
 
-        while (std::getline(iss, field, ' ')) 
+        while (std::getline(file, line))
         {
-            fields.push_back(field);
-        }
+            std::istringstream iss(line);
+            std::vector<std::string> fields;
+            std::string field;
 
-       
-        if (std::stoi(fields[3]) == student.getId())
-        {
-           
-            for (size_t i = 6; i < fields.size(); i += 3)
+            while (std::getline(iss, field, ' '))
             {
-                if (fields[i] == assignmentName)
-                {
-                    assignmentExists = true;
-
-                  
-                    fields[i + 2] = approve ? "1" : "0";
-
-                   
-                    line = "";
-                    for (const auto &field : fields)
-                    {
-                        line += field + " ";
-                    }
-                    line = line.substr(0, line.length() - 1); 
-
-                   
-                    file.clear(); 
-                    file.seekp(prevPos);
-                    file << line;
-                    break;
-                }
+                fields.push_back(field);
             }
-            break;
+
+            if (std::stoi(fields[3]) == student.getId())
+            {
+                for (size_t i = 6; i < fields.size(); i += 5)
+                {
+                    if (fields[i] == assignmentName)
+                    {
+                        assignmentExists = true;
+
+                        fields[i + 2] = approve ? "1" : "0";
+
+                        // If disapproved, increment the i+3 field
+                        if (!approve)
+                        {
+                            fields[i + 3] = std::to_string(std::stoi(fields[i + 3]) + 1);
+                        }
+
+                        // Append the new comment to the existing comment at i+4
+                        if (!fields[i + 4].empty())
+                        {
+                            fields[i + 4] += "~";
+                        }
+                        fields[i + 4] += comment;
+
+                        // Reconstruct the line
+                        line = "";
+                        for (const auto &field : fields)
+                        {
+                            line += field + " ";
+                        }
+                        line = line.substr(0, line.length() - 1);
+
+                        // Add a newline character at the end of the line
+                        line += "\n";
+
+                        // Write the updated line back to the file
+                        file.clear();
+                        file.seekp(prevPos);
+                        file << line;
+                        break;
+                    }
+                }
+                break;
+            }
+            
+            prevPos = file.tellg();
         }
-        prevPos = file.tellg();
+
+        if (!assignmentExists)
+        {
+            cout << "Assignment '" << assignmentName << "' not found!" << endl;
+            return;
+        }
+
+        file.close();
     }
-
-    if (!assignmentExists)
-    {
-        cout << "Assignment '" << assignmentName << "' not found!" << endl;
-        return;
-    }
-
-    file.close();
-}
-
-    // void suggestIteration(Student &student, string assignmentName)
-    // {
-    //     cout << "Suggesting iteration for assignment '" << assignmentName << "'." << endl;
-       
-    // }
 
     std::string getAssignmentLink(int id, const std::string &assignmentName)
     {
@@ -457,20 +418,19 @@ void reviewAssignment(Student &student, const std::string &assignmentName, bool 
             std::vector<std::string> fields;
             std::string field;
 
-            while (std::getline(iss, field, ' ')) 
+            while (std::getline(iss, field, ' '))
             {
                 fields.push_back(field);
             }
 
-          
             if (std::stoi(fields[3]) == id)
             {
-                
+
                 for (size_t i = 6; i < fields.size(); i += 3)
                 {
                     if (fields[i] == assignmentName)
                     {
-                        
+
                         link = fields[i + 1];
                         break;
                     }
@@ -507,7 +467,7 @@ public:
             string username, password, name;
             int id;
             bool isReviewer;
-          
+
             if (!(iss >> username >> password >> name >> id >> isReviewer))
             {
                 break;
@@ -587,56 +547,14 @@ public:
         file << "\n";
         file.close();
     }
-    // void loadData()
-    // {
-    //     ifstream file;
-    //     file.open("users.txt");
-    //     string username, password, name, assignment;
-    //     int id, iteration;
-    //     bool isReviewer;
-    //     string line;
-    //     if (file.is_open())
-    //     {
-    //         while (getline(file, line))
-    //         {
-    //             istringstream iss(line);
-    //             vector<string> tokens;
-    //             string token;
-
-    //             while (getline(iss, token, ' '))
-    //             {
-    //                 tokens.push_back(token);
-    //             }
-    //             registerUser(tokens[0], tokens[1], tokens[2], stoi(tokens[3]), stoi(tokens[4]), tokens[5]);
-    //         }
-    //     }
-    //     file.close();
-    // }
-    //     void loadData()
-    // {
-    //     ifstream file("users.txt");
-    //     string username, password, name, assignment;
-    //     int id, iteration;
-    //     bool isReviewer;
-
-    //     while (file >> username >> password >> name >> id >> isReviewer >> assignment)
-    //     {
-    //         vector<int> iterations;
-    //         while (file >> iteration)
-    //         {
-    //             iterations.push_back(iteration);
-    //         }
-    //         registerUser(username, password, name, id, isReviewer, assignment);
-    //     }
-    //     file.close();
-    // }
+    
 };
 
 int main()
 
 {
     UserManager userManager;
-    // userManager.loadData(); 
+    // userManager.loadData();
     string username, password, name;
     int id, choice;
     User *currentUser = nullptr;
@@ -650,17 +568,17 @@ int main()
 
             switch (choice)
             {
-            case 1: 
+            case 1:
                 cout << "Enter username, password, name, id:\n";
                 cin >> username >> password >> name >> id;
                 userManager.registerUser(username, password, name, id, false);
                 break;
-            case 2: 
+            case 2:
                 cout << "Enter username, password, name, id:\n";
                 cin >> username >> password >> name >> id;
                 userManager.registerUser(username, password, name, id, true);
                 break;
-            case 3: 
+            case 3:
                 cout << "Enter username and password:\n";
                 cin >> username >> password;
                 currentUser = userManager.loginUser(username, password);
@@ -669,7 +587,7 @@ int main()
                     cout << "Invalid username or password.\n";
                 }
                 break;
-            case 4:    
+            case 4:
                 exit(0);
                 break;
             default:
@@ -678,33 +596,34 @@ int main()
         }
         else
         {
-           //reviewer options
+            // reviewer options
             if (currentUser->isReviewer())
             {
-                
+
                 cout << "1. View available students\n2. Assign assignment\n3. Review assignment\n4. Logout\n";
                 cin >> choice;
                 string assignmentDetails;
                 int assignmentId;
                 string studentIdInput;
                 string assignmentName;
+                string comment;
                 switch (choice)
                 {
-                case 1: 
+                case 1:
                     dynamic_cast<Reviewer *>(currentUser)->viewAvailableStudents();
                     break;
-                case 2: 
+                case 2:
                     cout << "Enter assignment details and ID:\n";
                     cin >> assignmentDetails >> assignmentId;
                     cout << "Enter student ID or range of IDs (startId-endId):\n";
                     cin >> studentIdInput;
-                    if (studentIdInput.find('-') != string::npos) 
+                    if (studentIdInput.find('-') != string::npos)
                     {
                         int startId = stoi(studentIdInput.substr(0, studentIdInput.find('-')));
                         int endId = stoi(studentIdInput.substr(studentIdInput.find('-') + 1));
                         dynamic_cast<Reviewer *>(currentUser)->addAssignmentToBatch(startId, endId, assignmentDetails);
                     }
-                    else 
+                    else
                     {
                         dynamic_cast<Reviewer *>(currentUser)->addAssignmentToStudent(stoi(studentIdInput), assignmentDetails);
                     }
@@ -718,20 +637,30 @@ int main()
                     cout << "Enter assignment name:\n";
                     cin >> assignmentName;
 
-                   
                     std::string link = dynamic_cast<Reviewer *>(currentUser)->getAssignmentLink(id, assignmentName);
 
-                  
                     cout << "Link: " << link << "\n";
 
                     bool approve;
                     cout << "Enter approval status (1 for approve, 0 for disapprove) \n";
                     cin >> approve;
-                    dynamic_cast<Reviewer *>(currentUser)->reviewAssignment(student, assignmentName, approve);
+                    if (approve == 1)
+                    {
+                        comment = "Approved";
+                    }
+                    else
+                    {
+                        std::cout << "Enter comment:\n";
+                        std::cin.ignore(); // Ignore the newline character from the previous input
+                        std::getline(cin, comment);
+                        dynamic_cast<Reviewer *>(currentUser)->reviewAssignment(student, assignmentName, approve, comment);
+                        break;
+                    }
+                    dynamic_cast<Reviewer *>(currentUser)->reviewAssignment(student, assignmentName, approve, comment);
                     break;
                 }
-                case 4:     
-                    exit(0); 
+                case 4:
+                    exit(0);
                     break;
                 default:
                     cout << "Invalid option.\n";
@@ -748,7 +677,7 @@ int main()
                 case 1:
                     dynamic_cast<Student *>(currentUser)->viewAssignments();
                     break;
-                case 2: 
+                case 2:
 
                     cout << "Enter assignment name:\n";
                     cin >> assignmentName;
@@ -756,8 +685,8 @@ int main()
                     cin >> link;
                     dynamic_cast<Student *>(currentUser)->submitAssignment(assignmentName, link);
                     break;
-                case 3:      
-                    exit(0); 
+                case 3:
+                    exit(0);
                     break;
 
                 default:
