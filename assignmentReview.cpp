@@ -426,7 +426,7 @@ public:
             if (std::stoi(fields[3]) == id)
             {
 
-                for (size_t i = 6; i < fields.size(); i += 3)
+                for (size_t i = 6; i < fields.size(); i += 5)
                 {
                     if (fields[i] == assignmentName)
                     {
